@@ -1,0 +1,245 @@
+// @version=5
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+
+
+indicator('Mc War v3', overlay=true, max_lines_count=100)
+
+//Cài đặt
+//-----------------------------------------------------------------------------{
+length   = input.int(30, 'Swing', minval = 3 , group = 'OB')
+showBear = input.int(5, 'Số OB trên', minval = 0, group = 'OB')
+showBull = input.int(5, 'Số OB dưới', minval = 0, group = 'OB')
+useBody  = input(false, 'Thu gọn OB không nên dùng', group = 'OB')
+
+//Style
+bearCss      = input(color.new(#ff9800, 90), 'OB trên', group = 'Style')
+bearBreakCss = input(color.new(#ff1100, 100), 'OB trên Break', group = 'Style')
+
+
+
+bullCss      = input(color.new(#ff9800, 90), 'OB dưới', group = 'Style')
+bullBreakCss = input(color.new(#ff1100, 100), 'OB dưới Break', group = 'Style')
+
+
+
+
+
+//-----------------------------------------------------------------------------}
+
+//-----------------------------------------------------------------------------{
+type ob
+    float top = na
+    float btm = na
+    int   loc = bar_index
+    bool  breaker = false
+    int   break_loc = na
+    
+
+type swing
+    float y = na
+    int   x = na
+    bool  crossed = false
+
+
+//-----------------------------------------------------------------------------}
+//Functions
+//-----------------------------------------------------------------------------{
+swings(len)=>
+    var os = 0
+    var swing top = swing.new(na, na)
+    var swing btm = swing.new(na, na)
+    
+    upper = ta.highest(len)
+    lower = ta.lowest(len)
+
+    os := high[len] > upper ? 0 
+      : low[len] < lower ? 1 : os
+
+    if os == 0 and os[1] != 0
+        top := swing.new(high[length], bar_index[length])
+    
+    if os == 1 and os[1] != 1
+        btm := swing.new(low[length], bar_index[length])
+
+    [top, btm]
+
+method notransp(color css) => color.rgb(color.r(css), color.g(css), color.b(css))
+
+method display(ob id, css, break_css)=>
+    if id.breaker
+        box.new(id.loc, id.top, id.break_loc, id.btm, css.notransp()
+          , bgcolor = css
+          , xloc = xloc.bar_time)
+
+        box.new(id.break_loc, id.top, time+1, id.btm, na
+          , bgcolor = break_css
+          , extend = extend.right
+       
+          , xloc = xloc.bar_time)
+        // vien ob chưa dùng
+        // line.new(id.loc, id.top, id.break_loc, id.top, xloc.bar_time, color = css.notransp())
+        // line.new(id.loc, id.btm, id.break_loc, id.btm, xloc.bar_time, color = css.notransp())
+        // line ob bị phá
+        // line.new(id.break_loc, id.top, time+1, id.top, xloc.bar_time, extend.right, break_css.notransp(), line.style_dashed)
+        // line.new(id.break_loc, id.btm, time+1, id.btm, xloc.bar_time, extend.right, break_css.notransp(), line.style_dashed)
+    else
+        box.new(id.loc, id.top, time, id.btm, na
+          , bgcolor = css
+          , extend = extend.right
+       
+          , xloc = xloc.bar_time)
+        
+        // line.new(id.loc, id.top, time, id.top, xloc.bar_time, extend.right, css.notransp())
+        // line.new(id.loc, id.btm, time, id.btm, xloc.bar_time, extend.right, css.notransp())
+
+//-----------------------------------------------------------------------------}
+
+n = bar_index
+
+[top, btm] = swings(length)
+max = useBody ? math.max(close, open) : high
+min = useBody ? math.min(close, open) : low
+
+//-----------------------------------------------------------------------------}
+// OB trên
+//-----------------------------------------------------------------------------{
+var bullish_ob = array.new<ob>(0)
+bull_break_conf = 0
+
+if close > top.y and not top.crossed
+    top.crossed := true
+
+    minima = max[1]
+    maxima = min[1]
+    loc = time[1]
+
+    for i = 1 to (n - top.x)-1
+        minima := math.min(min[i], minima)
+        maxima := minima == min[i] ? max[i] : maxima
+        loc := minima == min[i] ? time[i] : loc
+
+    bullish_ob.unshift(ob.new(maxima, minima, loc))
+
+if bullish_ob.size() > 0
+    for i = bullish_ob.size()-1 to 0
+        element = bullish_ob.get(i)
+    
+        if not element.breaker 
+            if math.min(close, open) < element.btm
+                element.breaker := true
+                element.break_loc := time
+        else
+            if close > element.top
+                bullish_ob.remove(i)
+            else if i < showBull and top.y < element.top and top.y > element.btm 
+                bull_break_conf := 1
+
+//-----------------------------------------------------------------------------}
+// OB dưới
+//-----------------------------------------------------------------------------{
+var bearish_ob = array.new<ob>(0)
+bear_break_conf = 0
+
+if close < btm.y and not btm.crossed
+    btm.crossed := true
+
+    minima = min[1]
+    maxima = max[1]
+    loc = time[1]
+
+    for i = 1 to (n - btm.x)-1
+        maxima := math.max(max[i], maxima)
+        minima := maxima == max[i] ? min[i] : minima
+        loc := maxima == max[i] ? time[i] : loc
+
+    bearish_ob.unshift(ob.new(maxima, minima, loc))
+
+if bearish_ob.size() > 0
+    for i = bearish_ob.size()-1 to 0
+        element = bearish_ob.get(i)
+
+        if not element.breaker 
+            if math.max(close, open) > element.top
+                element.breaker := true
+                element.break_loc := time
+        else
+            if close < element.btm
+                bearish_ob.remove(i)
+            else if i < showBear and btm.y > element.btm and btm.y < element.top 
+                bear_break_conf := 1
+
+
+//-----------------------------------------------------------------------------}
+// Order Blocks
+//-----------------------------------------------------------------------------{
+for bx in box.all
+    bx.delete()
+
+for l in line.all
+    l.delete()
+
+if barstate.islast
+    //Bullish
+    if showBull > 0
+        for i = 0 to math.min(showBull-1, bullish_ob.size())
+            get_ob = bullish_ob.get(i)
+            get_ob.display(bullCss, bullBreakCss)
+
+    //Bearish
+    if showBear > 0
+
+        for i = 0 to math.min(showBear-1, bearish_ob.size())
+            get_ob = bearish_ob.get(i)
+            get_ob.display(bearCss, bearBreakCss)
+
+//-----------------------------------------------------------------------------}
+//-----------------------------------------------------------------------------}
+//-----------------------------------------------------------------------------}
+//-----------------------------------------------------------------------------}
+//-----------------------------------------------------------------------------}
+//-----------------------------------------------------------------------------}
+//-----------------------------------------------------------------------------}
+
+//logo
+title = input.string('MC War', 'Tittle', group='Tên')
+c_title = input.color(color.new(color.yellow, 20), 'Title Color', group='Tên')
+s_title = input.string('large', 'Title Size', options=['tiny', 'small', 'normal', 'large', 'huge', 'auto'], group='Tên')
+a_title = input.string('center', 'Title Alignment', options=['center', 'left', 'right'], group='Tên')
+
+//phụ đề
+subtitle = input.string('Nguyễn Thanh Tuấn', group='Phụ đề')
+c_subtitle = input.color(color.new(color.yellow, 40), 'Subitle Color', group='Phụ đề')
+s_subtitle = input.string('normal', 'Subtitle Size', options=['tiny', 'small', 'normal', 'large', 'huge', 'auto'], group='Phụ đề')
+a_subtitle = input.string('center', 'Subtitle Alignment', options=['center', 'left', 'right'], group='Phụ đề')
+
+//Ngày giờ
+symInfoCheck = input.bool(title='Ngày - Mả - TF', defval=true,group='Ngày giờ')
+c_symInfo = input.color(color.new(color.yellow, 40), 'Subitle Color', group='Ngày giờ')
+s_symInfo = input.string('normal', 'Subtitle Size', options=['tiny', 'small', 'normal', 'large', 'huge', 'auto'], group='Ngày giờ')
+a_symInfo = input.string('left', 'Subtitle Alignment', options=['center', 'left', 'right'], group='Ngày giờ')
+
+
+
+symInfo = syminfo.ticker + ' | ' + timeframe.period + (timeframe.isminutes ? 'M' : na)
+date = str.tostring(dayofmonth(time_close)) + '/' + str.tostring(month(time_close)) + '/' + str.tostring(year(time_close))
+//canh chỉnh
+textVPosition = input.string('top', 'Trục X', options=['top', 'middle', 'bottom'], group='Vị trí tên')
+textHPosition = input.string('right', 'Trục Y', options=['left', 'center', 'right'], group='Vị trí tên')
+
+symVPosition = input.string('bottom', 'Trục X', options=['top', 'middle', 'bottom'], group='Vị trí ngày')
+symHPosition = input.string('right', 'Trục Y', options=['left', 'center', 'right'], group='Vị trí ngày')
+// nền
+c_bg = input.color(color.new(color.blue, 100), 'Background', group='background')
+
+
+
+textWatermark = table.new(textVPosition + '_' + textHPosition, 1, 3)
+table.cell(textWatermark, 0, 0, title, 0, 0, c_title, a_title, text_size=s_title, bgcolor=c_bg)
+table.cell(textWatermark, 0, 1, subtitle, 0, 0, c_subtitle, a_subtitle, text_size=s_subtitle, bgcolor=c_bg)
+
+
+
+symWatermark = table.new(symVPosition + '_' + symHPosition, 5, 5)
+if symInfoCheck == true
+    table.cell(symWatermark, 0, 1, symInfo, 0, 0, c_symInfo, a_symInfo, text_size=s_symInfo, bgcolor=c_bg)
+    table.cell(symWatermark, 0, 0, date, 0, 0, c_symInfo, a_symInfo, text_size=s_symInfo, bgcolor=c_bg)
