@@ -1,0 +1,70 @@
+// @version=5
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+
+
+indicator('Mc War tên + EMA', overlay=true, max_lines_count=100)
+
+
+
+len1 = input(34, title='EMA 34')
+len2 = input(89, title='EMA 89')
+len3 = input(200, title='EMA 200')
+
+
+M1 = ta.ema(close, len1)
+M2 = ta.ema(close, len2)
+M3 = ta.ema(close, len3)
+
+plot(M1, color=color.new(color.teal, 0), linewidth=1)
+plot(M2, color=color.new(color.purple, 0), linewidth=1)
+plot(M3, color=color.new(#f32121, 0), linewidth=1)
+
+
+
+
+
+
+
+
+title = input.string('MC War', 'Tittle', group='Tên')
+c_title = input.color(color.new(color.yellow, 20), 'Title Color', group='Tên')
+s_title = input.string('large', 'Title Size', options=['tiny', 'small', 'normal', 'large', 'huge', 'auto'], group='Tên')
+a_title = input.string('center', 'Title Alignment', options=['center', 'left', 'right'], group='Tên')
+
+//phụ đề
+subtitle = input.string('Nguyễn Thanh Tuấn', group='Phụ đề')
+c_subtitle = input.color(color.new(color.yellow, 40), 'Subitle Color', group='Phụ đề')
+s_subtitle = input.string('normal', 'Subtitle Size', options=['tiny', 'small', 'normal', 'large', 'huge', 'auto'], group='Phụ đề')
+a_subtitle = input.string('center', 'Subtitle Alignment', options=['center', 'left', 'right'], group='Phụ đề')
+
+//Ngày giờ
+symInfoCheck = input.bool(title='Ngày - Mả - TF', defval=true,group='Ngày giờ')
+c_symInfo = input.color(color.new(color.yellow, 40), 'Subitle Color', group='Ngày giờ')
+s_symInfo = input.string('normal', 'Subtitle Size', options=['tiny', 'small', 'normal', 'large', 'huge', 'auto'], group='Ngày giờ')
+a_symInfo = input.string('left', 'Subtitle Alignment', options=['center', 'left', 'right'], group='Ngày giờ')
+
+
+
+symInfo = syminfo.ticker + ' | ' + timeframe.period + (timeframe.isminutes ? 'M' : na)
+date = str.tostring(dayofmonth(time_close)) + '/' + str.tostring(month(time_close)) + '/' + str.tostring(year(time_close))
+//canh chỉnh
+textVPosition = input.string('top', 'Trục X', options=['top', 'middle', 'bottom'], group='Vị trí tên')
+textHPosition = input.string('right', 'Trục Y', options=['left', 'center', 'right'], group='Vị trí tên')
+
+symVPosition = input.string('bottom', 'Trục X', options=['top', 'middle', 'bottom'], group='Vị trí ngày')
+symHPosition = input.string('right', 'Trục Y', options=['left', 'center', 'right'], group='Vị trí ngày')
+// nền
+c_bg = input.color(color.new(color.blue, 100), 'Background', group='background')
+
+
+
+textWatermark = table.new(textVPosition + '_' + textHPosition, 1, 3)
+table.cell(textWatermark, 0, 0, title, 0, 0, c_title, a_title, text_size=s_title, bgcolor=c_bg)
+table.cell(textWatermark, 0, 1, subtitle, 0, 0, c_subtitle, a_subtitle, text_size=s_subtitle, bgcolor=c_bg)
+
+
+
+symWatermark = table.new(symVPosition + '_' + symHPosition, 5, 5)
+if symInfoCheck == true
+    table.cell(symWatermark, 0, 1, symInfo, 0, 0, c_symInfo, a_symInfo, text_size=s_symInfo, bgcolor=c_bg)
+    table.cell(symWatermark, 0, 0, date, 0, 0, c_symInfo, a_symInfo, text_size=s_symInfo, bgcolor=c_bg)
