@@ -25,7 +25,6 @@ plot(M3, color=color.new(#f32121, 0), linewidth=1)
 
 
 
-
 title = input.string('MC War', 'Tittle', group='Tên')
 c_title = input.color(color.new(color.yellow, 20), 'Title Color', group='Tên')
 s_title = input.string('large', 'Title Size', options=['tiny', 'small', 'normal', 'large', 'huge', 'auto'], group='Tên')
@@ -37,6 +36,7 @@ c_subtitle = input.color(color.new(color.yellow, 40), 'Subitle Color', group='Ph
 s_subtitle = input.string('normal', 'Subtitle Size', options=['tiny', 'small', 'normal', 'large', 'huge', 'auto'], group='Phụ đề')
 a_subtitle = input.string('center', 'Subtitle Alignment', options=['center', 'left', 'right'], group='Phụ đề')
 
+//Ngày giờ
 //Ngày giờ
 symInfoCheck = input.bool(title='Ngày - Mả - TF', defval=true,group='Ngày giờ')
 c_symInfo = input.color(color.new(color.yellow, 40), 'Subitle Color', group='Ngày giờ')
