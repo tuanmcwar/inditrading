@@ -1,0 +1,174 @@
+// © GainzAlgo
+
+//@version=5
+// @version=5
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+
+
+indicator('Mc War OB + EMA', overlay=true, max_lines_count=100)
+// EMA 
+// len1 = input(34, title='EMA 34',group='EMA')
+// len2 = input(89, title='EMA 89',group='EMA')
+// len3 = input(200, title='EMA 200',group='EMA')
+
+
+// M1 = ta.ema(close, len1)
+// M2 = ta.ema(close, len2)
+// M3 = ta.ema(close, len3)
+
+// plot(M1, color=color.new(#eeff00, 20), linewidth=1)
+// plot(M2, color=color.new(color.blue, 0), linewidth=3)
+// plot(M3, color=color.new(#f8f8f8, 5), linewidth=4)
+
+ema34 = ta.ema(close, 34)
+ema89 = ta.ema(close, 89)
+// isObUp(index) =>
+//     isDown(index + 1) and isUp(index) and close[index] > high[index + 1] and   buySignal
+ 
+// Điều kiện báo điểm mua
+buySignal(index) =>  (ema34 > ema89 and  close[index - 1] >  ema89 and close[index - 1] <= ema34 * 1.001)
+sellSignal(index) => ( ema34 < ema89  and  close[index - 1] < ema89 and close[index - 1] >= ema34 * 1.001)
+
+
+// Vẽ EMA 34 và EMA 89 trên biểu đồ
+plot(ema34, color=color.blue, title="EMA 34")
+plot(ema89, color=color.red, title="EMA 89")
+
+
+
+// // ---------------------------------------------------------------------------------------------- 
+// // ---------------------------------------------------------------------------------------------- 
+// // ---------------------------------------------------------------------------------------------- 
+// // ---------------------------------------------------------------------------------------------- 
+// // ---------------------------------------------------------------------------------------------- 
+// // ---------------------------------------------------------------------------------------------- 
+// // ---------------------------------------------------------------------------------------------- 
+
+plotOB = input.bool(defval=true, title='OB', group='Order Blocks')
+obBullColor = input.color(defval=color.new(color.green, 90), title='Bullish OB Color', inline='Set Custom Color', group='Order Blocks')
+obBearColor = input.color(defval=color.new(color.red, 90), title='Bearish OB Color', inline='Set Custom Color', group='Order Blocks')
+obBoxBorder = input.string(defval=line.style_solid, title='OB Box Border Style', options=[line.style_dashed, line.style_dotted, line.style_solid], group='Order Blocks')
+obBorderTransparency = input.int(defval=1, title='OB Border Box transparent', minval=0, maxval=100, group='Order Blocks')
+obMaxBoxSet = input.int(defval=1000000, title='Số lượng OB', minval=1, maxval=100000000, group='Order Blocks', tooltip='Nhỏ nhất = 1, Lớn nhất = 100000000')
+filterMitOB = input.bool(defval=true, title='Chỉnh màu OB bị phá qua', group='Order Blocks')
+mitOBColor = input.color(defval=color.new(color.gray, 90), title=' Chọn màu OB bị phá qua', group='Order Blocks')
+plotLabelOB = input.bool(defval=false, title='OB Label', inline='OB label', group='Order Blocks')
+obLabelColor = input.color(defval=color.gray, title='Color', inline='OB label', group='Order Blocks')
+obLabelSize = input.string(defval=size.small, title="Size", options=[size.huge, size.large, size.small, size.tiny, size.auto, size.normal], inline='OB label', group='Order Blocks')
+
+
+
+bosBoxFlag  = input.bool(title='MC War', defval=false, group='HIHI', tooltip='Độ đẹp trai của MC War')
+bosBoxLength  = input.int(title='Bao nhiêu điểm', defval=10, minval=10, maxval=100, group='HIHI',tooltip='Thanh điểm 10')
+
+
+plotOBFVG = input.bool(defval=true, title='Đánh dấu có OB+FVG', group='OB Có FVG')
+obfvgBullColor = input.color(defval=color.new(color.green, 0), title='Bullish OB+FVG Color', group='OB Có FVG', inline='OBFVG Color')
+obfvgBearColor = input.color(defval=color.new(color.red, 0), title='Bearish OB+FVG Color', group='OB Có FVG', inline='OBFVG Color')
+
+
+
+
+
+//Box Types
+var int _ob  = 1
+var int _fvg = 2
+var int _rjb = 3
+var int _bos = 4
+
+//Box Labels
+var string _obLabel  = "OB"
+var string _fvgLabel = "FVG"
+var string _rjbLabel = "RJB"
+var string _bosLabel = "BoS"
+var string _plus     = "+"
+var string _minus    = "-"
+var string _empty    = ""
+
+//Box Arrays
+var box[] _bearBoxesOB  = array.new_box()
+var box[] _bullBoxesOB  = array.new_box()
+var box[] _bearBoxesFVG = array.new_box()
+var box[] _bullBoxesFVG = array.new_box()
+var box[] _bearBoxesRJB = array.new_box()
+var box[] _bullBoxesRJB = array.new_box()
+var box[] _bearBoxesBOS = array.new_box()
+var box[] _bullBoxesBOS = array.new_box()
+
+
+
+//Functions
+isUp(index) =>
+    close[index] > open[index] 
+
+isDown(index) =>
+    close[index] < open[index] 
+
+isObUp(index) =>
+    isDown(index + 1) and isUp(index) and close[index] > high[index + 1] and ema34[index] > ema89[index]              and            open[index ]  <= ema34 * 1.005
+ 
+isObDown(index) =>
+       isUp(index + 1) and isDown(index) and close[index] < low[index + 1] and ema34[index] < ema89[index]              and            open[index ]  >= ema34 * .995
+isFvgUp(index) =>
+    (low[index] > high[index + 2])
+
+isFvgDown(index) =>
+    (high[index] < low[index + 2])
+
+//Function to Calculte Box Length
+_controlBox(_boxes, _high, _low, _type) =>
+    if array.size(_boxes) > 0
+        for i = array.size(_boxes) - 1 to 0 by 1
+            _box = array.get(_boxes, i)
+            _boxLow = box.get_bottom(_box)
+            _boxHigh = box.get_top(_box)
+            _boxRight = box.get_right(_box)
+            if bosBoxFlag and _type == _bos
+                if na or (bar_index + bosBoxLength - 1 == _boxRight and not((_high > _boxLow and _low < _boxLow) or (_high > _boxHigh and _low < _boxHigh)))
+                    box.set_right(_box, bar_index + bosBoxLength - 1)
+            else if (filterMitOB and _type == _ob) 
+                if na or (bar_index == _boxRight and not((_high > _boxLow and _low < _boxLow) or (_high > _boxHigh and _low < _boxHigh)))
+                    box.set_right(_box, bar_index + 1)
+                else
+                    if _type == _ob
+                        box.set_bgcolor(_box, mitOBColor)
+                        box.set_border_color(_box, mitOBColor)
+                    
+            else
+                if na or (bar_index == _boxRight and not((_high > _boxLow and _low < _boxLow) or (_high > _boxHigh and _low < _boxHigh)))
+                    box.set_right(_box, bar_index + 1)
+
+
+
+//////////////////// Order Block //////////////////
+//Bullish OB Box Plotting
+if isObUp(1) and plotOB 
+    _bullboxOB = box.new(left=bar_index - 2, top=high[2], right=bar_index, bottom=math.min(low[2], low[1]), border_color=color.new(obBullColor, obBorderTransparency), border_style=obBoxBorder, border_width=1, bgcolor=obBullColor, 
+     text=plotLabelOB ? _obLabel  + _plus : _empty, text_halign=text.align_right, text_valign=text.align_bottom, text_size=obLabelSize, text_color=obLabelColor)
+    if array.size(_bullBoxesOB) > obMaxBoxSet
+        box.delete(array.shift(_bullBoxesOB))
+    array.push(_bullBoxesOB, _bullboxOB)
+
+//Bearish OB Box Plotting
+if isObDown(1) and plotOB 
+    _bearboxOB = box.new(left=bar_index - 2, top=math.max(high[2], high[1]), right=bar_index, bottom=low[2], border_color=color.new(obBearColor, obBorderTransparency), border_style=obBoxBorder, border_width=1, bgcolor=obBearColor, 
+     text=plotLabelOB ? _obLabel  + _minus : _empty, text_halign=text.align_right, text_valign=text.align_bottom, text_size=obLabelSize, text_color=obLabelColor)
+    if array.size(_bearBoxesOB) > obMaxBoxSet
+        box.delete(array.shift(_bearBoxesOB))
+    array.push(_bearBoxesOB, _bearboxOB)
+    
+if plotOB
+    _controlBox(_bearBoxesOB, high, low, _ob)
+    _controlBox(_bullBoxesOB, high, low, _ob)
+
+
+///////////////// Stacked OB + FVG //////////////////
+
+///////////////// Stacked OB + FVG //////////////////
+
+plotshape(plotOBFVG and isFvgDown(0) and isObDown(1)  , "Bearish OB+FVG Stack", style=shape.labeldown, location=location.abovebar, color=obfvgBearColor, size=size.small)
+plotshape(plotOBFVG and isFvgUp(0) and isObUp(1)  , "Bullish OB+FVG Stack", style=shape.labelup, location=location.belowbar, color=obfvgBullColor, size=size.small)
+
+
+// plotshape(series=buySignal, location=location.belowbar, color=color.green, style=shape.labelup, title="Buy Signal", text="Buy")
+// plotshape(series=sellSignal, location=location.abovebar, color=color.red, style=shape.labeldown, title="sell Signal", text="sell")
