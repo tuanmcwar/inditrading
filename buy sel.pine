@@ -1,0 +1,45 @@
+
+//@version=4
+study("Sell Signal", overlay=true)
+
+// Lấy dữ liệu giá và khối lượng
+open_value = open
+close_value = close
+volume_value = volume
+
+// Tính toán phần trăm thay đổi của giá
+price_change = ((close_value - open_value) / open_value) * 100
+
+// Bollinger Bands
+length = input(20, minval=1, title="Bollinger Bands Length")
+mult = input(2.0, minval=0.001, maxval=50, title="Bollinger Bands Standard Deviation")
+src = close
+basis = sma(src, length)
+dev = mult * stdev(src, length)
+upper_band = basis + dev
+lower_band = basis - dev
+
+// MACD
+[macd_line, signal_line, _] = macd(close, 12, 26, 9)
+
+// Xác định điều kiện cho nến xanh tăng ít nhất 5%
+green_condition = close_value > open_value and price_change >= 5
+
+// Xác định điều kiện cho nến hiện tại có khối lượng gấp 5 lần khối lượng của nến trước
+volume_condition = volume_value >= 5 * volume_value[1]
+
+// Xác định điều kiện giá đóng của nến nằm ngoài Bollinger Bands
+outside_bollinger = close_value > upper_band or close_value < lower_band
+
+// Xác định điều kiện MACD > Signal
+macd_condition = macd_line > signal_line
+
+// Xác định điểm bán khi tất cả các điều kiện đều thỏa mãn
+sell_signal = green_condition and volume_condition and outside_bollinger and macd_condition
+
+// Vẽ biểu đồ mô phỏng điểm bán
+plotshape(sell_signal, style=shape.triangledown, location=location.abovebar, color=color.red, size=size.small)
+
+// Hiển thị giá trị bán trên biểu đồ
+if (sell_signal)
+    label.new(bar_index, high, "Sell Signal", xloc=xloc.bar_index, yloc=yloc.abovebar, color=color.red)

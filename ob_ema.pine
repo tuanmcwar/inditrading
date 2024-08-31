@@ -1,4 +1,3 @@
-
 // © GainzAlgo
 
 //@version=5
@@ -95,22 +94,58 @@ var box[] _bearBoxesRJB = array.new_box()
 var box[] _bullBoxesRJB = array.new_box()
 var box[] _bearBoxesBOS = array.new_box()
 var box[] _bullBoxesBOS = array.new_box()
+high_value = high
+low_value = low
+volume_value = volume
 
-
+price_change = ((high_value - low_value) / high_value) * 100
 
 //Functions
+
+
+
 isUp(index) =>
     close[index] > open[index]  
-
-
 isDown(index) =>
     close[index] < open[index]
-isObUp(index) =>
-    isDown(index + 1) and isUp(index) and close[index] > high[index + 1] and ema34[index] > ema89[index]              and            open[index ]  <= ema34 * 1.005   and     volume[index]  >= 1.5* volume [2] 
- 
+
+//  volume lớn hơn cây trước 50%
+volumeUp(index)=>
+    volume[index]  >= 1.5* volume [index + 1 ] 
+//  giá ema 34 > ema89    
+emaUp(index) => 
+    ema34[index + 1] > ema89[index + 1]
+
+emaDown(index) => 
+    ema34[index + 1] < ema89[index + 1]
+ //  giá mở cửa không được lớn hơn 0,5% ema 34
+openEmaup(index)=>
+    close[index + 1]  < ema34 * 1.005
+
+openEmadown(index)=>
+    close[index + 1]  > ema34 * .995
+// biên độ nến
+rangeNen(index)=> 
+    ((high[index + 1] - low[index + 1]) / high[index + 1]) * 100
+        
+        
+isObUp(index) => 
+    isDown(index + 1)  and isUp(index) and close[index] > high[index + 1]       and   volumeUp(index) and emaUp(index) and openEmaup(index) and rangeNen(index) > .5
+   
+
 isObDown(index) =>
-       isUp(index + 1) and isDown(index) and close[index] < low[index + 1] and ema34[index] < ema89[index]              and            open[index ]  >= ema34 * .995 and  volume[index]  >= 1.5* volume [2] 
+       isUp(index + 1) and isDown(index) and high[index - 1] < low[index + 1] and volumeUp(index) and emaDown(index) and openEmadown(index) and rangeNen(index) > .5
+
+
+
+
+
+
+
 isFvgUp(index) =>
+
+
+
     (low[index] > high[index + 2])
 
 isFvgDown(index) =>
@@ -169,6 +204,11 @@ if plotOB
 
 plotshape(plotOBFVG and isFvgDown(0) and isObDown(1)  , "Bearish OB+FVG Stack", style=shape.labeldown, location=location.abovebar, color=obfvgBearColor, size=size.small)
 plotshape(plotOBFVG and isFvgUp(0) and isObUp(1)  , "Bullish OB+FVG Stack", style=shape.labelup, location=location.belowbar, color=obfvgBullColor, size=size.small)
+
+
+// plotshape(plotOBFVG and isFvgUp(0) and isObUp(1)  , "Bullish OB+FVG Stack", style=shape.labelup, location=location.belowbar, color=obfvgBullColor, size=size.small)
+// plotshape(isFvgUp(0) and  isObUp(1)  , "Bullish OB+FVG Stack", style=shape.labelup, location=location.belowbar, color=obfvgBullColor, size=size.small)
+
 
 
 // plotshape(series=buySignal, location=location.belowbar, color=color.green, style=shape.labelup, title="Buy Signal", text="Buy")
