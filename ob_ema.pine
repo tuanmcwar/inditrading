@@ -134,7 +134,7 @@ isObUp(index) =>
    
 
 isObDown(index) =>
-       isUp(index + 1) and isDown(index) and high[index - 1] < low[index + 1] and volumeUp(index) and emaDown(index) and openEmadown(index) and rangeNen(index) > .5 and high[index] < high [index + 1] 
+       isUp(index + 1) and isDown(index) and high[index - 1] < low[index + 1]    and volumeUp(index) and emaDown(index) and openEmadown(index) and rangeNen(index) > .5 and high[index] < high [index + 1] 
 
 
 
@@ -202,12 +202,39 @@ if plotOB
 
 ///////////////// Stacked OB + FVG //////////////////
 
-plotshape(plotOBFVG and isFvgDown(0) and isObDown(1)  , "Bearish OB+FVG Stack", style=shape.labeldown, location=location.abovebar, color=obfvgBearColor, size=size.small)
-plotshape(plotOBFVG and isFvgUp(0) and isObUp(1)  , "Bullish OB+FVG Stack", style=shape.labelup, location=location.belowbar, color=obfvgBullColor, size=size.small)
+
+Bearish = isFvgDown(0) and isObDown(1)
+Bullish = isFvgUp(0) and isObUp(1)
+plotshape(plotOBFVG and Bearish  , "Bearish OB+FVG Stack", style=shape.labeldown, location=location.abovebar, color=obfvgBearColor, size=size.small)
+plotshape(plotOBFVG and  Bullish , "Bullish OB+FVG Stack", style=shape.labelup, location=location.belowbar, color=obfvgBullColor, size=size.small)
+
+if (Bullish and barstate.isconfirmed)
+    alert('Sell Signal Triggered: EMA 34 < EMA 89 and Open Price is not less than EMA 34 by more than 0.5%', alert.freq_once_per_bar_close)
+
+if (Bearish and barstate.isconfirmed)
+    alert('Sell Signal Triggered: EMA 34 < EMA 89 and Open Price is not less than EMA 34 by more than 0.5%', alert.freq_once_per_bar_close)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// plotshape(plotOBFVG and isFvgDown(0) and isObDown(1)  , "Bearish OB+FVG Stack", style=shape.labeldown, location=location.abovebar, color=obfvgBearColor, size=size.small)
 // plotshape(plotOBFVG and isFvgUp(0) and isObUp(1)  , "Bullish OB+FVG Stack", style=shape.labelup, location=location.belowbar, color=obfvgBullColor, size=size.small)
-// plotshape(isFvgUp(0) and  isObUp(1)  , "Bullish OB+FVG Stack", style=shape.labelup, location=location.belowbar, color=obfvgBullColor, size=size.small)
+
+
+// // plotshape(plotOBFVG and isFvgUp(0) and isObUp(1)  , "Bullish OB+FVG Stack", style=shape.labelup, location=location.belowbar, color=obfvgBullColor, size=size.small)
+// // plotshape(isFvgUp(0) and  isObUp(1)  , "Bullish OB+FVG Stack", style=shape.labelup, location=location.belowbar, color=obfvgBullColor, size=size.small)
 
 
 
